@@ -73,12 +73,6 @@ while read -r line; do
         # Reset for the next batch
         files=()
         counter=0
-
-        # # Add a 5-minute (300 seconds) wait before processing the next batch
-        # sleep 300
-
-        # # Add the break statement to exit the loop after the first batch for optimising purposes
-        # break
     fi
 done <"$ids_file"
 
