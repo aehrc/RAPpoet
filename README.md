@@ -5,7 +5,8 @@ RAP paralelization orchestration engine template: Optimised driver and worker sc
 
 # Included Scripts
 Driver Script: This script orchestrates the execution of the genomic analysis pipeline.
-Work Script: This script contains the necessary commands and functions for performing steps 1-3 of the pipeline.
+
+Worker Script: This script contains the necessary commands and functions for performing steps 1-3 of the pipeline.
 
 # Pipeline Steps
 Quality Control Step 1: This step involves [describe what happens in this step, e.g., filtering out low-quality data, identifying outliers].
