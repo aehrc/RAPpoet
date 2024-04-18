@@ -12,6 +12,6 @@ Worker Script: This script contains the necessary commands and functions for per
 ## Pipeline Steps
 Quality Control Step 1: This step involves [describe what happens in this step, e.g., filtering out low-quality data, identifying outliers].
 
-Quality Control Step 2: In this step, [describe the actions taken, e.g., further cleaning of data, normalization procedures].
+Quality Control Step 2: In this step, .
 
-Merging Files and Logistic Regression with PLINK2: This step involves [describe the merging process and logistic regression using PLINK2 for association analysis].
+Merging Files and Logistic Regression with PLINK2: This step involves merging the QC filered files into one file and running a plink2 Logistic regression analysis.
