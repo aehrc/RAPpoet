@@ -5,6 +5,7 @@ RAP paralelization orchestration engine template: Optimised driver and worker sc
 
 ## Included Scripts
 For each step a driver (drive_N.sh) and worker script (worker_N.sh) is included.
+
 Driver Script: This script orchestrates the execution of the genomic analysis pipeline.
 
 Worker Script: This script contains the necessary commands and functions for performing steps 1-3 of the pipeline.
