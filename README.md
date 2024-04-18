@@ -11,8 +11,8 @@ Driver Script: This script orchestrates the execution of the genomic analysis pi
 Worker Script: This script contains the necessary commands and functions for performing steps 1-3 of the pipeline.
 
 ## Pipeline Steps
-Quality Control Step 1: This step involves [describe what happens in this step, e.g., filtering out low-quality data, identifying outliers].
+Quality Control Step 1: This step involves sample filtering and variant filtering, normalisation and renaming.
 
-Quality Control Step 2: In this step, .
+Quality Control Step 2: In this step involves chunking vcfs, standard filering (geno, maf, hwe), and generating plink format files.
 
 Merging Files and Logistic Regression with PLINK2: This step involves merging the QC filered files into one file and running a plink2 Logistic regression analysis.
