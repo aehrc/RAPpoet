@@ -1,7 +1,7 @@
 # RAPpoet
 RAP paralelization orchestration engine template: Optimised driver and worker scripts for genomic analyses on UKBB cloud-based, Research Analysis Platform (RAP)
 
-# This repository contains templates for a driver and work script for steps 1-3 of my genomic analysis pipeline.
+# This repository contains templates for driver and worker script for steps 1-3 for running a genomic analysis pipeline on RAP.
 
 # Included Scripts
 Driver Script: This script orchestrates the execution of the genomic analysis pipeline.
