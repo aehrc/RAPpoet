@@ -5,7 +5,7 @@ Research Analysis Platform parallelisation orchestration engine (RAPpoet) templa
 
 This repository contains templates for a driver and worker approach to running a genomic analyses on the [The UK Biobank Research Analysis Platform (RAP)](https://documentation.dnanexus.com/). The UKBB RAP platform is available to all UK Biobank approved researchers, that are collaborating on an approved or in progress project. If you already have a RAP account, or wish to set one up click this [link](https://ukbiobank.dnanexus.com/landing). 
 
-On the RAP, analyses are carried out on AWS Elastic Compute Cloud (EC2) instances with various options for storage, memory capacity, and number of cores. This workflow is designed for steps 1-3 of running a genomic analysis pipeline, leveraging the cloud environment to run the first two stages of the workflow in parallel and merge the data in step three for a logistic regression genome-wide association analysis.
+On the RAP, analyses are conducted on AWS Elastic Compute Cloud (EC2) instances, offering diverse options for storage, memory capacity, and core numbers. This workflow is tailored for executing a genomic analysis pipeline, utilising the cloud environment to run two stages of quality control (QC) and, subsequently, merging the data for a logistic regression genome-wide association analysis in the final step.
 
 ### 1. Quality Control Step 1: Sample and Variant Filtering
 This step involves sample filtering, variant filtering, normalisation, and renaming using bcftools.
@@ -16,8 +16,10 @@ This step includes chunking VCFs, applying standard filters (geno, MAF, HWE), an
 ### 3. Merging Files and Logistic Regression with PLINK2
 In this step, the QC filtered files are merged into a single file, followed by a PLINK2 logistic regression analysis. 
 
-### Environmental set up to run RAP on CLI 
-The UKBB RAP proudly offers a user-friendly web User Interface (UI). However, to run RAPpoet and scale up your processes, you'll need to access the RAP via the command-line interface (CLI) using the DNAnexus Platform SDK, also known as [dx-toolkit](https://documentation.dnanexus.com/user/helpstrings-of-sdk-command-line-utilities). 
+## Set up
+
+### Environment Configuration for RAP CLI 
+The UKBB RAP offers a user-friendly web User Interface (UI). However, to run RAPpoet and scale up your processes, you'll need to access the RAP via the command-line interface (CLI) using the DNAnexus Platform SDK, also known as [dx-toolkit](https://documentation.dnanexus.com/user/helpstrings-of-sdk-command-line-utilities). 
 
 Follow the steps below to set up an environment for accessing the RAP from the command line. These steps assume you have [conda](https://conda.io/projects/conda/en/latest/user-guide/install/macos.html) and [pip](https://pip.pypa.io/en/stable/installation/) installed.
 
@@ -43,11 +45,10 @@ pip3 install dxpy
 ```
 ### Installation
 Clone the RAPpoet repository: 
-
 ```
 git clone https://github.com/aehrc/RAPpoet.git
 ```
-This pipeline doesn't adhere to a specific input or directory structure and depends on your RAP storage setup. Instead, a set of template scripts are provided in the `scripts_templates` folder, which you need to edit to match your configuration.
+This pipeline doesn't adhere to a specific input or directory structure and depends on your RAP storage setup as well as the VCFs you are using. Instead, a set of template scripts are provided in the `scripts_templates` folder, which you need to edit to match your configuration. 
 
 UKBB 500K VCFs were designed to contain variants within specific genome windows, resulting in some files having no variant information. We determined that a file size of over 3.77MB indicates a non-empty VCF. Our list of non-empty VCFs is included in the `chr_vcf_lists` folder.
 
@@ -55,18 +56,7 @@ UKBB 500K VCFs were designed to contain variants within specific genome windows,
 |-- script_templates
 |-- chr_vcf_lists
 ```
-
-#### Orchestration Engine Scripts
-The UKBB RAP operates akin to a cloud system, housing all files within a central bucket. However, performing intricate operations on these files often requires spinning up instances using apps or applets, which can quickly become costly and inefficient, especially when dealing with thousands whole genome sequencing VCFs.
-
-RAPpoet employs two key scripts: the 'driver' and the 'worker'. The 'driver' script, executed locally, configures the instance environment, uploads essential files, and initiates the 'worker' scripts on the instances. Conversely, the 'worker' script, deployed to each instance, delineates processes for the uploaded files.
-
-This configuration facilitates task parallelisation, enabling the 'worker' script to execute processes concurrently via the xargs tool. This optimises resource utilisation by allowing a single instance to manage multiple files, thereby reducing the requisite number of instances and streamlining job management and oversight.
-
-In the scripts_templates folder, you'll find a driver (drive_N.sh) and worker script (worker_N.sh) for each step.
-
 ### Software   
-
 All tools (AKA Apps & applets on RAP) required to run the RAPpoet pipeline are globally installed on RAP. The process predominantly makes use of the Swiss Army Knife (SAK) App. SAK is a generic app which can be used to perform common file operations or bioinformatics manipulations- it is preloaded with the following tools:
 * bcftools (v1.15.1)
 * bedtools (v2.30.0)
@@ -86,6 +76,52 @@ All tools (AKA Apps & applets on RAP) required to run the RAPpoet pipeline are g
 * vcflib (v1.0.3)
 * vcftools (v0.1.16)
 
+## User guide   
+### RAPpoet: Orchestration Engine Scripts
+The UKBB RAP operates akin to a cloud system, housing all files within a central bucket. However, performing intricate operations on these files often requires spinning up instances using apps or applets, which can quickly become costly and inefficient, especially when dealing with thousands whole genome sequencing VCFs.
+
+RAPpoet employs two key scripts: the 'driver' and the 'worker'. The 'driver' script, executed locally, configures the instance environment, uploads essential files, and initiates the 'worker' scripts on the instances. Conversely, the 'worker' script, deployed to each instance, delineates processes for the uploaded files.
+
+This configuration facilitates task parallelisation, enabling the 'worker' script to execute processes concurrently via the xargs tool. This optimises resource utilisation by allowing a single instance to manage multiple files, thereby reducing the requisite number of instances and streamlining job management and oversight.
+
+In the scripts_templates folder, you'll find a driver (drive_N.sh) and worker script (worker_N.sh) for each step.
+
+The scripts are set up to be run from the directory they are held in
+```
+cd script_templates
+```
+### 1. Quality Control Step 1: Sample and Variant Filtering
+This step involves sample filtering, variant filtering, normalisation, and renaming using bcftools via SAK app.
+
+#### driver_01.sh template lines to edit
+* line 25 : update `output_dir` variable
+* line 34 : update path
+* line 36 : update path
+* line 53 : update path to list of vcfs to process. eg in `chr_vcf_lists` folders
+
+#### worker_01.sh template lines to edit
+* line 15: update path to the cohort you are using (Ignore if using 500K VCFs)
+* line 31: Update `bcftools view -S` flag to your cohort csv (csv should have one sample per line)
+
+run QC1:
+```
+bash driver_01.sh <chr>
+```
+output:
+* filtered VCFs
+* indexed VCFs
+* summary stats for each VCF
+
+### 2. Quality Control Step 2: Chunking and Standard Filtering
+This step includes chunking VCFs, applying standard filters (geno, MAF, HWE), and generating PLINK format files.
+```
+bash driver_02.sh
+```
+### 3. Merging Files and Logistic Regression with PLINK2
+In this step, the QC filtered files are merged into a single file, followed by a PLINK2 logistic regression analysis. 
+```
+bash driver_03.sh
+```
 ## Resource usage
 
 DNAnexus analyses are executed on Virtual Machines. They have a range of AWS and Azure [instance types](https://documentation.dnanexus.com/developer/api/running-analyses/instance-types) available on the DNAnexus Platform. Instances can be started with different [priority levels](https://dnanexus.gitbook.io/uk-biobank-rap/working-on-the-research-analysis-platform/managing-job-priority) which determine execution times, spot VM interruptions and restart policies.
@@ -102,7 +138,16 @@ Steps described in this repository were run using AWS EC2 instances and optimise
 | Driver_2  | mem2_ssd1_v2_x16   | 160vcf/instance          | ~50%         | ~6   | ~250-350   |     |
 | Driver_3        | mem2_ssd1_v2_x48   |  all VCFs 1 instance       | 2         | see note   | ~15   | variable based on # VCFs|
 
-Cloud computing requires downloading data onto the compute instance, leading to significant time and storage costs, especially for large-scale genomic data. RAPpoet accomodates for this by utilising [dxfuse](https://github.com/dnanexus/dxfuse) which acts like a storage bucket mount but works through API calls. However the dxFUSE filesystem failed due to excessive API calls, so batch sizes and the number of concurrent pVCFs were adjusted to optimise compute performance without overloading the system and having instances killed.
+Cloud computing requires downloading data onto the compute instance, leading to significant time and storage costs, especially for large-scale genomic data. RAPpoet accomodates for this by utilising [dxfuse](https://github.com/dnanexus/dxfuse) which acts like a storage bucket mount but works through API calls. Unfortunately, when optimising CPU usage the dxFUSE filesystem failed due to excessive API calls, so batch sizes and the number of concurrent pVCFs had to be adjusted to optimise compute performance without overloading the system and having instances killed. A list of tested parameters are outlined below.
+
+| Test | Instance            | Batch size | VCFs processed in parallel  | Failed  | Error message                                                                                                           |
+|------|---------------------|-------|-----|---------|------------------------------------------------------------------------------------------------------------------|
+| 1    | mem2_ssd1_v2_x96    | 382   | 192 | All     | The machine running the job became unresponsive                                                                 |
+| 2    | mem2_ssd1_v2_x48    | 382   | 100 | All     | The machine running the job became unresponsive. Error while running the command (refer to the job log for more information). Warning: Out of memory error occurred during this job. |
+| 3    | mem2_ssd1_v2_x48    | 382   | 70  | Partial | The machine running the job became unresponsive. Error while running the command (refer to the job log for more information). Warning: Out of memory error occurred during this job. |
+| 4    | mem1_ssd1_v2_x72    | 140   | 70  | All     | Error while running the command (refer to the job log for more information). Warning: Out of memory error occurred during this job. |
+| 5    | mem2_ssd1_v2_x48    | 140   | 70  | 0       | NA                                                                                                               |
+
 
 ### Authors 
 

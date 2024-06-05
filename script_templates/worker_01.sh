@@ -16,11 +16,18 @@ datafolder="/mnt/project/Bulk/GATK and GraphTyper WGS/GraphTyper population leve
 
 read -r -a file_array <<< "${batch_file_names}"
 
-# Define a function to process a single file
+# The following function processes the VCF file:
+# 1. Filters samples based on the provided sample list (make sure -S flag goes to your sample list)
+# 2. Applies various filters based on INFO field criteria and retains only SNPs
+# 3. Splits multiallelic sites into biallelic records
+# 4. Annotates the ID field with CHROM:POS:REF:ALT
+# 5. Outputs the result as a compressed BCF file with a modified name
+# 6. Indexes the resulting file
+# 7. Generates summary statistics
 process_file() {
     local file="${datafolder}/$1"  # The file already contains the datafolder
     echo "Processing file: ${file}"  # Debug line
-    #make sure -S flag goes to your sample list
+    
     bcftools view -S /mnt/project/UKB_CAD_samples.csv "${file}" --force-samples | bcftools filter -i "INFO/AAScore > 0.15 && INFO/PASS_ratio > 0.05 && INFO/ABHet > 0.175 && INFO/ABHom > 0.9 && INFO/QD > 6 && QUAL >= 10" | bcftools view -v snps | bcftools norm -m-snps | bcftools annotate -x ID -I +'%CHROM:%POS:%REF:%ALT' -O b -o $(basename "${file}" .vcf.gz)_cad_seqQC_snps_split_cpraID.bcf.gz ;
     wait;
     bcftools index -c $(basename "${file}" .vcf.gz)_cad_seqQC_snps_split_cpraID.bcf.gz;
@@ -28,7 +35,7 @@ process_file() {
     bcftools stats $(basename "${file}" .vcf.gz)_cad_seqQC_snps_split_cpraID.bcf.gz > $(basename "${file}" .vcf.gz)_cad_seqQC_snps_split_cpraID.STATS;
 }
 
-# Export the function so it can be used by xargs
+# Export the function so it can be used by xargs to parallelise the job
 export -f process_file
 export datafolder
 
