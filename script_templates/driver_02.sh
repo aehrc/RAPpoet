@@ -5,9 +5,18 @@
 #######################################################
 ## driver_02.sh
 ## Authors: Mitchell J. O’Brien, Anubhav Kaphle, Letitia M.F. Sng, 
-## run as: bash driver_02.sh
+## run as: bash driver_02.sh <chr>
 ## Info: This script executes the worker scripts for QC2
 #######################################################
+
+# Description:
+# This script set the job parameters for the EC2 instance then starts a loop
+# That processes a list of file IDs in batches using the `swiss-army-knife` tool:
+# 1. Reads file IDs from `ids_file`.
+# 2. Groups file IDs into batches of size `batchSize`.
+# 3. For each full batch, it runs a command on an EC2 instance to process the files.
+# 4. After reading all lines, it processes any remaining files in a final batch.
+# This ensures efficient batch processing and optimal resource use.
 
 #################### SCRIPT START ##################
 
@@ -34,7 +43,7 @@ worker_sh_path=$(dx find data --name "worker_02.sh" --path / --brief | head -1)
 batch_number=0
 
 #Set the chr you're working on
-chr=9
+chr=$1
 
 declare -a files=()
 counter=0

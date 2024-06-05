@@ -91,7 +91,7 @@ The scripts are set up to be run from the directory they are held in
 cd script_templates
 ```
 ### 1. Quality Control Step 1: Sample and Variant Filtering
-This step involves sample filtering, variant filtering, normalisation, and renaming using bcftools via SAK app.
+This step entails transforming extensive VCF files based on sample and variant quality, as well as normalization, utilizing bcftools through the SAK app.
 
 #### driver_01.sh template lines to edit
 * line 25 : update `output_dir` variable
@@ -114,9 +114,28 @@ output:
 
 ### 2. Quality Control Step 2: Chunking and Standard Filtering
 This step includes chunking VCFs, applying standard filters (geno, MAF, HWE), and generating PLINK format files.
+First generate a list of VCFs to process, must be in order for `bcftools concat`. Here is an example how with a bash one-liner:
+1. cat your_file_list.txt: Reads the list of filenames from a file.
+2. awk -F'_b|_v' '{print $2, $0}': Uses awk to split the lines at _b and _v and prints the numeric part after _b followed by the original line. This helps in sorting.
+3. sort -n -k1,1: Sorts the output numerically based on the first field (the numeric part extracted by awk).
+4. cut -d' ' -f2-: Removes the numeric part, leaving only the original filenames.
 ```
-bash driver_02.sh
+dx ls "/path/to/output/directory/ukb23374_c9_b*_v1_cad_seqQC_snps_split_cpraID.bcf.gz" | awk -F'_b|_v' '{print $2, $0}' | sort -n -k1,1 | cut -d' ' -f2- 
 ```
+#### driver_02.sh template lines to edit
+* line 25 : update `output_dir` variable
+* line 34 : update path
+* line 36 : update path
+* line 53 : update path to list of vcfs to process in order, eg. above
+
+#### worker_02.sh template lines to edit
+* line 13: update path to the VCF directory
+
+```
+bash driver_02.sh <chr>
+```
+* PLINK files following standard quality control filtering
+
 ### 3. Merging Files and Logistic Regression with PLINK2
 In this step, the QC filtered files are merged into a single file, followed by a PLINK2 logistic regression analysis. 
 ```

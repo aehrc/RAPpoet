@@ -15,6 +15,13 @@ datafolder="/mnt/project/Bulk/GATK and GraphTyper WGS/VariantSpark/chr${chrom}"
 read -r -a file_array <<< "${batch_file_names}"
 
 #Define a function to process a multiple files
+# The following function processes a set of VCF files:
+# 1. Prepares a list of file paths based on the provided file names and data folder.
+# 2. Concatenates the VCF files into a single compressed VCF file.
+# 3. Determines the genomic coordinates (start and stop positions) of the concatenated VCF file.
+# 4. Generates PLINK files from the concatenated VCF data with specified parameters (genotype, minor allele frequency, and Hardy-Weinberg equilibrium).
+# 5. Outputs the PLINK files with a modified name based on genomic coordinates.
+# 6. Cleans up temporary files created during the process.
 process_file() {
     local file="$1"  # The file already contains the datafolder
     local chunk_no="$2"
@@ -49,7 +56,7 @@ process_file() {
     rm temp_${chunk_no}_2*
 }
 
-# Export the function 
+# Export and execute the function 
 export -f process_file
 export datafolder
 export chrom
