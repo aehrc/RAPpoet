@@ -1,5 +1,5 @@
 # RAPpoet
-Research Analysis Platform parallelisation orchestration engine (RAPpoet): Optimised driver and worker script templates for genomic analyses on UK Biobank (UKBB) cloud-based Research Analysis Platform (RAP)
+Research Analysis Platform parallelisation orchestration engine (RAPpoet): Optimised driver and worker script templates for genomic analyses on The UK Biobank (UKBB) cloud-based Research Analysis Platform (RAP)
 
 ## Description  
 
@@ -48,7 +48,7 @@ Clone the RAPpoet repository:
 ```
 git clone https://github.com/aehrc/RAPpoet.git
 ```
-Repo folders:
+Folders:
 ```
 |-- script_templates
 |-- chr_vcf_lists
@@ -116,12 +116,12 @@ output:
 ### 2. Quality Control Step 2: Chunking and Standard Filtering
 This step includes chunking VCFs, applying standard filters (geno, MAF, HWE), and generating PLINK format files.
 First generate a list of VCFs to process, must be in order for `bcftools concat`. Here is an example how with a bash one-liner:
-1. cat your_file_list.txt: Reads the list of filenames from a file.
+1. dx ls "/path/to/output/directory/ukb*.bcf.gz: Reads the list of filenames from a file.
 2. awk -F'_b|_v' '{print $2, $0}': Uses awk to split the lines at _b and _v and prints the numeric part after _b followed by the original line. This helps in sorting.
 3. sort -n -k1,1: Sorts the output numerically based on the first field (the numeric part extracted by awk).
 4. cut -d' ' -f2-: Removes the numeric part, leaving only the original filenames.
 ```
-dx ls "/path/to/output/directory/ukb23374_c9_b*_v1_cad_seqQC_snps_split_cpraID.bcf.gz" | awk -F'_b|_v' '{print $2, $0}' | sort -n -k1,1 | cut -d' ' -f2- 
+dx ls "/path/to/output/directory/ukb*.bcf.gz" | awk -F'_b|_v' '{print $2, $0}' | sort -n -k1,1 | cut -d' ' -f2- 
 ```
 #### driver_02.sh template lines to edit
 * line 25 : update `output_dir` variable
@@ -139,9 +139,28 @@ bash driver_02.sh <chr>
 * PLINK files following standard quality control filtering
 
 ### 3. Merging Files and Logistic Regression with PLINK2
-In this step, the QC filtered files are merged into a single file, followed by a PLINK2 logistic regression analysis. 
+In this step, All QC filtered files are merged into a single file, followed by a PLINK2 logistic regression analysis. 
+First generate a list of plink files to merge. Here is an example how with a bash one-liner:
+1. dx ls "/path/to/output/directory/ukb*.bcf.gz: Reads the list of filenames from a file.
+2. awk -F'_b|_v' '{print $2, $0}': Uses awk to split the lines at _b and _v and prints the numeric part after _b followed by the original line. This helps in sorting.
+3. sort -n -k1,1: Sorts the output numerically based on the first field (the numeric part extracted by awk).
+4. cut -d' ' -f2-: Removes the numeric part, leaving only the original filenames.
 ```
-bash driver_03.sh
+dx ls "/path/to/output/directory/ukb*.bcf.gz" | awk -F'_b|_v' '{print $2, $0}' | sort -n -k1,1 | cut -d' ' -f2- 
+```
+second ensure you have generated a phenotype (and covariate) file in the plink2 [format](https://www.cog-genomics.org/plink/2.0/input#pheno_example) to run linear logistic regression.
+eg. #IID  qt1    bmi    site    cov1    cov2
+#### driver_02.sh template lines to edit
+* line 25 : update `output_dir` variable
+* line 34 : update path
+* line 36 : update path
+* line 53 : update path to list of vcfs to process in order, eg. above
+
+#### worker_02.sh template lines to edit
+* line 13: update path to the VCF directory
+
+```
+bash driver_03.sh <chr>
 ```
 ## Resource usage
 
