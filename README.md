@@ -1,25 +1,25 @@
 # RAPpoet
-Research Analysis Platform parallelisation orchestration engine (RAPpoet) template: Optimised driver and worker scripts for genomic analyses on UKBB cloud-based RAP
+Research Analysis Platform parallelisation orchestration engine (RAPpoet): Optimised driver and worker script templates for genomic analyses on UK Biobank (UKBB) cloud-based Research Analysis Platform (RAP)
 
 ## Description  
 
-This repository contains templates for a driver and worker approach to running a genomic analyses on the [The UK Biobank Research Analysis Platform (RAP)](https://documentation.dnanexus.com/). The UKBB RAP platform is available to all UK Biobank approved researchers, that are collaborating on an approved or in progress project. If you already have a RAP account, or wish to set one up click this [link](https://ukbiobank.dnanexus.com/landing). 
+This repository contains templates for a driver and worker approach to running a genomic analyses on the [The UK Biobank Research Analysis Platform](https://documentation.dnanexus.com/). 
 
-On the RAP, analyses are conducted on AWS Elastic Compute Cloud (EC2) instances, offering diverse options for storage, memory capacity, and core numbers. This workflow is tailored for executing a genomic analysis pipeline, utilising the cloud environment to run two stages of quality control (QC) and, subsequently, merging the data for a logistic regression genome-wide association analysis in the final step.
+The UKBB RAP platform is available to all approved researchers that are collaborating on an approved or in progress [project](https://ukbiobank.dnanexus.com/landing). On the RAP, analyses are conducted on AWS Elastic Compute Cloud (EC2) instances, offering diverse options for storage, memory capacity, and core numbers. This workflow is tailored for executing a genomic analysis pipeline, utilising the cloud environment to run two stages of quality control (QC) and, subsequently, merging the data for a logistic regression genome-wide association analysis in the final step.
 
 ### 1. Quality Control Step 1: Sample and Variant Filtering
-This step involves sample filtering, variant filtering, normalisation, and renaming using bcftools.
+This step involves sample filtering, variant quality filtering, and variant normalisation using bcftools.
 
 ### 2. Quality Control Step 2: Chunking and Standard Filtering
-This step includes chunking VCFs, applying standard filters (geno, MAF, HWE), and generating PLINK format files.
+This step includes partially merging VCFs, applying standard genomic filters (geno, MAF, HWE), and generating [PLINK](https://www.cog-genomics.org/plink/2.0/) format files.
 
 ### 3. Merging Files and Logistic Regression with PLINK2
-In this step, the QC filtered files are merged into a single file, followed by a PLINK2 logistic regression analysis. 
+In this step, the QC filtered files are merged into a single file, followed by a PLINK logistic regression analysis. 
 
 ## Set up
 
 ### Environment Configuration for RAP CLI 
-The UKBB RAP offers a user-friendly web User Interface (UI). However, to run RAPpoet and scale up your processes, you'll need to access the RAP via the command-line interface (CLI) using the DNAnexus Platform SDK, also known as [dx-toolkit](https://documentation.dnanexus.com/user/helpstrings-of-sdk-command-line-utilities). 
+The UKBB RAP offers a user-friendly web User Interface (UI). However, to run RAPpoet and scale up your processes, you'll need to access the RAP via the command-line interface (CLI) using the [DNAnexus Platform SDK](https://github.com/dnanexus/dx-toolkit), also known as [dx-toolkit](https://documentation.dnanexus.com/user/helpstrings-of-sdk-command-line-utilities). 
 
 Follow the steps below to set up an environment for accessing the RAP from the command line. These steps assume you have [conda](https://conda.io/projects/conda/en/latest/user-guide/install/macos.html) and [pip](https://pip.pypa.io/en/stable/installation/) installed.
 
@@ -48,16 +48,17 @@ Clone the RAPpoet repository:
 ```
 git clone https://github.com/aehrc/RAPpoet.git
 ```
-This pipeline doesn't adhere to a specific input or directory structure and depends on your RAP storage setup as well as the VCFs you are using. Instead, a set of template scripts are provided in the `scripts_templates` folder, which you need to edit to match your configuration. 
-
-UKBB 500K VCFs were designed to contain variants within specific genome windows, resulting in some files having no variant information. We determined that a file size of over 3.77MB indicates a non-empty VCF. Our list of non-empty VCFs is included in the `chr_vcf_lists` folder.
-
+Repo folders:
 ```
 |-- script_templates
 |-- chr_vcf_lists
 ```
+This pipeline doesn't require a specific directory structure, rather depends on your RAP storage (clouds bucket) setup. Instead, a set of template scripts are provided in the `scripts_templates` folder, which you need to edit to match your configuration. 
+
+The UKBB 500K VCFs (default cohort) were designed to contain variants within specific genome windows, resulting in some files having no variant information. We determined that a file size of over 3.77MB indicates a non-empty VCF. Our list of non-empty VCFs is included in the `chr_vcf_lists` folder.
+
 ### Software   
-All tools (AKA Apps & applets on RAP) required to run the RAPpoet pipeline are globally installed on RAP. The process predominantly makes use of the Swiss Army Knife (SAK) App. SAK is a generic app which can be used to perform common file operations or bioinformatics manipulations- it is preloaded with the following tools:
+All tools (AKA Apps & applets on RAP) required to run the RAPpoet pipeline are globally installed on RAP. The pipeline makes use of the Swiss Army Knife (SAK) App. SAK is a generic app which can be used to perform common file operations or bioinformatics manipulations- it is preloaded with the following tools:
 * bcftools (v1.15.1)
 * bedtools (v2.30.0)
 * BGEN (v1.1.7)
@@ -78,9 +79,9 @@ All tools (AKA Apps & applets on RAP) required to run the RAPpoet pipeline are g
 
 ## User guide   
 ### RAPpoet: Orchestration Engine Scripts
-The UKBB RAP operates akin to a cloud system, housing all files within a central bucket. However, performing intricate operations on these files often requires spinning up instances using apps or applets, which can quickly become costly and inefficient, especially when dealing with thousands whole genome sequencing VCFs.
+The UKBB RAP operates akin to a cloud system, housing all stored files within a central bucket. The [dx-toolkit](https://documentation.dnanexus.com/user/helpstrings-of-sdk-command-line-utilities) provides options for assessing your files, but performing complex operations on these files requires spinning up instances using apps or applets. This approach can quickly become costly and inefficient, especially when dealing with thousands whole genome sequencing VCFs.
 
-RAPpoet employs two key scripts: the 'driver' and the 'worker'. The 'driver' script, executed locally, configures the instance environment, uploads essential files, and initiates the 'worker' scripts on the instances. Conversely, the 'worker' script, deployed to each instance, delineates processes for the uploaded files.
+RAPpoet employs two key scripts per step: A 'driver' and a 'worker'. The 'driver' script, executed locally, configures the instance environment, uploads essential files to the RAP, and initiates the 'worker' scripts on the instances. Conversely, the 'worker' script, deployed to each instance, delineates processes for the uploaded files. In this way RAPpoet operates like a coordinated delivery and assembly team. Imagine the 'driver' as a delivery person who picks up essential packages (files) and drops them off at a central warehouse (the RAP bucket). After the drop-off, the driver heads to the assembly line (the EC2 instance), where the 'worker' is waiting. The 'worker' is like an assembly line worker who takes the delivered packages and meticulously follows a set of instructions to process them into a finished product. The driver ensures the packages reach the right place, and the worker ensures each task is completed efficiently.
 
 This configuration facilitates task parallelisation, enabling the 'worker' script to execute processes concurrently via the xargs tool. This optimises resource utilisation by allowing a single instance to manage multiple files, thereby reducing the requisite number of instances and streamlining job management and oversight.
 
@@ -91,7 +92,7 @@ The scripts are set up to be run from the directory they are held in
 cd script_templates
 ```
 ### 1. Quality Control Step 1: Sample and Variant Filtering
-This step entails transforming extensive VCF files based on sample and variant quality, as well as normalization, utilizing bcftools through the SAK app.
+This step filters population VCF files based on sample and variant quality using bcftools through the SAK app. multi-allelic VCF files are normalised in the process.
 
 #### driver_01.sh template lines to edit
 * line 25 : update `output_dir` variable
@@ -108,7 +109,7 @@ run QC1:
 bash driver_01.sh <chr>
 ```
 output:
-* filtered VCFs
+* filtered VCFs 
 * indexed VCFs
 * summary stats for each VCF
 
@@ -131,6 +132,7 @@ dx ls "/path/to/output/directory/ukb23374_c9_b*_v1_cad_seqQC_snps_split_cpraID.b
 #### worker_02.sh template lines to edit
 * line 13: update path to the VCF directory
 
+Run QC2:
 ```
 bash driver_02.sh <chr>
 ```
