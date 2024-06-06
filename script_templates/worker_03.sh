@@ -10,6 +10,7 @@
 chrom=$1
 datafolder="/mnt/project/Bulk/GATK and GraphTyper WGS/VariantSpark/chr${chrom}"
 
+# use plink2 to merge all chr .pgen files into a single chr file
 plink2 --pmerge-list pmerge_sorted_list_${chrom} \
         --pmerge-list-dir "${datafolder}" \
         --memory 190000 \
@@ -18,7 +19,7 @@ plink2 --pmerge-list pmerge_sorted_list_${chrom} \
 
 wait
 
-# make sure the --pheno flag is directed to your phenotype file
+# conduct a logistic regression analysis make sure the --pheno flag is directed to your phenotype file
 plink2 --pfile ukb23374_c${chrom}_merged_v1_cad_seqQC_snps_split_cpraID_geno0.02_maf0.00001_hwe1-6 \
        --glm \
        --mind 0.02 \

@@ -109,9 +109,9 @@ run QC1:
 bash driver_01.sh <chr>
 ```
 output:
-* filtered VCFs 
-* indexed VCFs
-* summary stats for each VCF
+* filtered VCFs - [basename]._cad_seqQC_snps_split_cpraID.bcf.gz
+* indexed VCFs - [basename]._cad_seqQC_snps_split_cpraID.bcf.gz.csi
+* summary stats for each VCF - [basename]._cad_seqQC_snps_split_cpraID.STATS
 
 ### 2. Quality Control Step 2: Chunking and Standard Filtering
 This step includes chunking VCFs, applying standard filters (geno, MAF, HWE), and generating PLINK format files.
@@ -136,32 +136,46 @@ Run QC2:
 ```
 bash driver_02.sh <chr>
 ```
-* PLINK files following standard quality control filtering
+Output: 
+* Plink2 [.pgen](https://www.cog-genomics.org/plink/2.0/formats#pgen) files - [basename]\_[chr]\_[start]_[stop]_v1_cad_seqQC_snps_split_cpraID_geno0.02_maf0.00001_hwe1-6.pgen (and accompanying file *.pvar, *.pgen, *.plog)
 
 ### 3. Merging Files and Logistic Regression with PLINK2
 In this step, All QC filtered files are merged into a single file, followed by a PLINK2 logistic regression analysis. 
-First generate a list of plink files to merge. Here is an example how with a bash one-liner:
-1. dx ls "/path/to/output/directory/ukb*.bcf.gz: Reads the list of filenames from a file.
-2. awk -F'_b|_v' '{print $2, $0}': Uses awk to split the lines at _b and _v and prints the numeric part after _b followed by the original line. This helps in sorting.
+First generate a list of plink files to merge. Here is an example how generate an ordered list with a bash one-liner:
+1. dx ls "/path/to/output/directory/ukb*.pgen: Reads the list of filenames from a file.
+2. awk -F'_' '{print $2, $0}': Uses awk to split the lines at _ and prints the start position. This helps in sorting.
 3. sort -n -k1,1: Sorts the output numerically based on the first field (the numeric part extracted by awk).
 4. cut -d' ' -f2-: Removes the numeric part, leaving only the original filenames.
 ```
-dx ls "/path/to/output/directory/ukb*.bcf.gz" | awk -F'_b|_v' '{print $2, $0}' | sort -n -k1,1 | cut -d' ' -f2- 
+dx ls "/Bulk/GATK and GraphTyper WGS/VariantSpark/chr9/*pgen" | awk -F'_' '{print $3, $0}' | sort -n -k1,1 | cut -d' ' -f2- > pmerge_sorted_list_<chr>
 ```
-second ensure you have generated a phenotype (and covariate) file in the plink2 [format](https://www.cog-genomics.org/plink/2.0/input#pheno_example) to run linear logistic regression.
-eg. #IID  qt1    bmi    site    cov1    cov2
-#### driver_02.sh template lines to edit
-* line 25 : update `output_dir` variable
-* line 34 : update path
-* line 36 : update path
-* line 53 : update path to list of vcfs to process in order, eg. above
 
-#### worker_02.sh template lines to edit
-* line 13: update path to the VCF directory
+Next ensure you have generated a phenotype (and covariate) file in the plink2 [format](https://www.cog-genomics.org/plink/2.0/input#pheno_example) to run linear logistic regression.
+
+eg. #IID  qt1    bmi    site    cov1    cov2
+
+This can be generated with the web interface in the [Cohort Browser](https://documentation.dnanexus.com/user/cohort-browser), or generated locally and uploaded.
+```
+dx upload /path/to/dir/[phenotype].txt --destination /path/to/dir/
+```
+
+#### driver_03.sh template lines to edit
+* line 21 : update `output_dir` variable
+* line 30 : update path
+* line 33 : update path
+* line 38 : update path
+* line 41 : update path to list of vcfs to process in order, eg. above
+
+#### worker_03.sh template lines to edit
+* line 11: update path to the pgen directory
 
 ```
 bash driver_03.sh <chr>
 ```
+Output: 
+* Plink2 [.pgen](https://www.cog-genomics.org/plink/2.0/formats#pgen) files - [basename]\_[chr]\_v1_cad_seqQC_snps_split_cpraID_geno0.02_maf0.00001_hwe1-6.pgen (and accompanying file *.pvar, *.pgen, *.plog)
+* Plink2 [logistic regression](https://www.cog-genomics.org/plink/1.9/assoc#logistic) results - logistic_regression_output.case.glm.logistic.hybrid
+
 ## Resource usage
 
 DNAnexus analyses are executed on Virtual Machines. They have a range of AWS and Azure [instance types](https://documentation.dnanexus.com/developer/api/running-analyses/instance-types) available on the DNAnexus Platform. Instances can be started with different [priority levels](https://dnanexus.gitbook.io/uk-biobank-rap/working-on-the-research-analysis-platform/managing-job-priority) which determine execution times, spot VM interruptions and restart policies.

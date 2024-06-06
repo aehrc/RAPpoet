@@ -9,6 +9,11 @@
 ## Info: This script executes the worker scripts for plink merging of files and logistic regression
 #######################################################
 
+# Description:
+# This script set the job parameters for the EC2 instance
+# using the `swiss-army-knife` tool, where all chr pgen files are merged
+# and a logistic regression association is conducted with plink2
+
 #################### SCRIPT START ##################
 
 project=$(dx ls -l --brief | grep "Project" | awk '{print $NF}' | sed "s/(//g;s/)//g")
@@ -30,12 +35,12 @@ wait
 #get worker script path from on the Nexus Platform
 worker_sh_path=$(dx find data --name "worker_03.sh" --path / --brief | head -1)
 
-dx rm /obr187/pmerge_sorted_list_${chr}
+dx rm /path/to/dir/pmerge_sorted_list_${chr}
 wait
-#upload list of files to merge - can be created with sort_pgen_files.sh
-dx upload ${CWD}/path/to/dir/pmerge_sorted_list_${chr} --destination /obr187/
+#upload list of files to merge - can be created with recommended line in 'User Guide > 3.Merging Files - https://github.com/aehrc/RAPpoet'
+dx upload ${CWD}/path/to/dir/pmerge_sorted_list_${chr} --destination /path/to/dir/
 
-chr=9
+chr=$1
 merge_list=$(dx find data --name "pmerge_sorted_list_${chr}" --json | jq -r '.[].describe.id')
 
 dx run swiss-army-knife \
